@@ -22,6 +22,8 @@ jobs:
           npm init -y
           npm i @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
           mkdir -p www && cp index.html www/
+          npm i chess.js@0.10.3
+          if [ -f node_modules/chess.js/chess.js ]; then cp node_modules/chess.js/chess.js www/chess.js && sed -i 's#https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.min.js#chess.js#' www/index.html; fi
           npx cap init "Apex Chess" com.hara.apexchess --web-dir www
           npx cap add android
           sed -i "s/android:name=\".MainActivity\"/& android:screenOrientation=\"sensorLandscape\"/" android/app/src/main/AndroidManifest.xml
