@@ -4,163 +4,131 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Apex Chess</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>♞</text></svg>">
-<script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
-:root{color-scheme:dark;--b:min(94vw,480px)}
-body{background:radial-gradient(1200px 600px at 50% -10%,#1e1b4b,#09090f 60%);color:#e5e7eb;font-family:system-ui,sans-serif;min-height:100vh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-#app{display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px}
-#side{width:min(94vw,480px)}#side>*+*{margin-top:8px}
-@media (orientation:landscape){:root{--b:min(88vh,50vw)}#app{flex-direction:row;min-height:100vh;justify-content:center;gap:18px}#side{width:min(42vw,400px);max-height:96vh;overflow-y:auto}}
-.glass{background:rgba(255,255,255,.07);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);border-radius:14px}
-#board{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);width:var(--b);height:var(--b);border:7px solid #3b2a1a;border-radius:12px;overflow:hidden;box-sizing:content-box;box-shadow:0 0 0 2px #d97706,0 14px 40px rgba(0,0,0,.7),0 0 60px rgba(245,158,11,.25)}
-.sq{min-width:0;min-height:0;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;user-select:none;cursor:pointer}
-.lt{background:linear-gradient(135deg,#f6e4bd,#e9d09b)}.dk{background:linear-gradient(135deg,#b98a58,#a3713c)}
-.sel{box-shadow:inset 0 0 0 100px rgba(250,204,21,.55)}.lm{box-shadow:inset 0 0 0 100px rgba(250,204,21,.32)}
-.ck{box-shadow:inset 0 0 0 100px rgba(239,68,68,.6)!important}.cap{box-shadow:inset 0 0 0 4px rgba(16,185,129,.95)}
-.co{position:absolute;font-size:calc(var(--b)/8*.18);opacity:.6;font-weight:700;color:#5b3a1a}.co.f{right:3px;bottom:1px}.co.r{left:3px;top:1px}
-.pc{font-size:calc(var(--b)/8*.8);line-height:1;filter:drop-shadow(0 3px 2px rgba(0,0,0,.55));animation:pop .2s}
-.pc.w{color:#fffbea;-webkit-text-stroke:1.3px #3b2a1a}.pc.b{color:#1c1917;-webkit-text-stroke:.8px #e7d5b0}
-.dot{position:absolute;width:26%;height:26%;border-radius:50%;background:rgba(16,185,129,.85);box-shadow:0 0 10px #10b981}
-@keyframes pop{from{transform:scale(.7);opacity:.5}to{transform:scale(1);opacity:1}}
-@keyframes sl{from{transform:translateY(-30px);opacity:0}to{transform:none;opacity:1}}
-.btn{padding:.5rem .9rem;border-radius:10px;background:linear-gradient(135deg,#6366f1,#a855f7);font-weight:600;font-size:.85rem;box-shadow:0 0 14px rgba(168,85,247,.4)}
-.btn:active{transform:scale(.96)}.rbtn{background:linear-gradient(135deg,#dc2626,#f97316);box-shadow:0 0 14px rgba(220,38,38,.6)}
-select,input{background:#111827;border:1px solid #374151;border-radius:8px;padding:.45rem .6rem;color:#fff;font-size:.85rem;width:100%}
-#toasts{position:fixed;top:8px;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:6px;z-index:60;pointer-events:none}
-.t{padding:.6rem 1.1rem;border-radius:12px;font-weight:700;animation:sl .25s;box-shadow:0 6px 24px rgba(0,0,0,.6)}
-.t.ok{background:#059669}.t.red{background:#dc2626}.t.gold{background:#d97706}
-</style></style>
+:root{color-scheme:dark;--l:#f0d9b5;--d:#b58863;--b:min(94vw,470px);--ac:#8b5cf6}
+[data-th=green]{--l:#eeeed2;--d:#769656}[data-th=ocean]{--l:#dee3e6;--d:#8ca2ad}[data-th=neon]{--l:#e9defa;--d:#7c5bb0}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#07070f;color:#e5e7eb;font-family:system-ui,sans-serif;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button{font:inherit;color:inherit;border:0;cursor:pointer}.hidden{display:none!important}
+.scr{min-height:100vh;display:flex;align-items:center;justify-content:center;gap:18px;padding:10px;flex-wrap:wrap}
+#menu{background:radial-gradient(900px 500px at 15% 20%,#312e81aa,transparent),radial-gradient(800px 500px at 90% 90%,#7e22ce88,transparent),#07070f}
+.mwrap{display:flex;gap:28px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:900px}
+.brand{text-align:center}.logo{font-size:84px;line-height:1;filter:drop-shadow(0 0 25px #a78bfa);animation:fl 3s ease-in-out infinite}
+@keyframes fl{50%{transform:translateY(-8px)}}
+.brand h1{margin:.2rem 0;font-size:32px;letter-spacing:4px;background:linear-gradient(90deg,#fbbf24,#f472b6,#818cf8);-webkit-background-clip:text;color:transparent}
+.brand p{margin:0 0 10px;color:#9ca3af;font-size:13px}
+.chip{padding:.45rem .9rem;border-radius:99px;background:#ffffff14;border:1px solid #ffffff22;font-size:13px}
+.mbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(92vw,430px)}
+.mb{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:14px;border-radius:16px;background:linear-gradient(135deg,#ffffff14,#ffffff06);border:1px solid #ffffff22;text-align:left;transition:.15s}
+.mb:active{transform:scale(.96)}.mb i{font-style:normal;font-size:26px}.mb b{font-size:15px}.mb span{font-size:11px;color:#9ca3af}
+.mb.big{grid-column:span 2;background:linear-gradient(135deg,#6366f1,#a855f7);box-shadow:0 0 28px #a855f766}
+.mb.big span{color:#e9d5ff}
+.card{background:#ffffff0f;border:1px solid #ffffff1c;border-radius:14px;padding:8px 12px;backdrop-filter:blur(10px)}
+#bw{display:flex}
+#board{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);width:var(--b);height:var(--b);border:8px solid #2b1d12;border-radius:14px;overflow:hidden;box-sizing:content-box;box-shadow:0 0 0 2px #d97706,0 16px 45px #000c,0 0 60px #8b5cf655}
+.sq{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;overflow:hidden;cursor:pointer;background:var(--l)}
+.sq.d{background:var(--d)}
+.sq.lm::before,.sq.sel::before,.sq.ck::before{content:"";position:absolute;inset:0;background:#facc15;opacity:.45}
+.sq.sel::before{opacity:.65}.sq.ck::before{background:radial-gradient(circle,#ef4444,#ef444400 75%);opacity:1}
+.sq.cap::after{content:"";position:absolute;inset:3px;border:4px solid #10b981cc;border-radius:50%}
+.dot{position:absolute;width:28%;height:28%;border-radius:50%;background:#10b981cc;box-shadow:0 0 10px #10b981}
+.pc{position:relative;width:88%;height:88%;filter:drop-shadow(0 3px 2px #0008);animation:pop .18s;pointer-events:none}
+.pc.g{display:flex;align-items:center;justify-content:center;font-size:calc(var(--b)/8*.78);line-height:1;width:auto;height:auto}
+.pc.g.w{color:#fffbea;-webkit-text-stroke:1.3px #3b2a1a}.pc.g.b{color:#1c1917;-webkit-text-stroke:.8px #e7d5b0}
+@keyframes pop{from{transform:scale(.75);opacity:.5}}
+.co{position:absolute;font-size:calc(var(--b)/8*.17);font-weight:700;opacity:.6;color:#4b3320}.co.f{right:3px;bottom:1px}.co.r{left:3px;top:1px}
+#side{width:min(94vw,440px);display:flex;flex-direction:column;gap:8px}
+.pl{display:flex;align-items:center;gap:10px}.av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:#ffffff18}
+.pl.on{box-shadow:0 0 0 2px #34d399,0 0 20px #34d39955}.pl b{display:block;font-size:14px}.pl small{color:#9ca3af}
+.st{text-align:center;font-weight:700;color:#6ee7b7}
+#moves{max-height:92px;overflow-y:auto;font-size:13px;color:#cbd5e1;line-height:1.7}#moves i{color:#6b7280;font-style:normal;margin-right:3px}#moves span{margin-right:8px}
+.row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.btn{padding:.6rem .8rem;border-radius:11px;background:linear-gradient(135deg,#6366f1,#a855f7);font-weight:700;font-size:13px;box-shadow:0 0 14px #a855f755}
+.btn:active{transform:scale(.96)}.btn.gr{background:#ffffff1a;box-shadow:none}.btn.rd{background:linear-gradient(135deg,#dc2626,#f97316);box-shadow:0 0 14px #dc262688}
+input,select{width:100%;background:#111827;border:1px solid #374151;border-radius:10px;padding:.55rem .7rem;color:#fff;font-size:14px}
+#adm{padding:10px;border-radius:14px;border:1px solid #ef4444aa;background:#450a0a66}#adm h3{margin:0 0 8px;color:#f87171;font-size:14px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mod{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;padding:12px;z-index:50}
+.box{background:#0f1020;border:1px solid #ffffff22;border-radius:18px;padding:16px;width:min(94vw,420px);max-height:92vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.box h3{margin:0;font-size:18px}.hd{display:flex;justify-content:space-between;align-items:center}.x{background:#ffffff18;border-radius:50%;width:30px;height:30px}
+.lv{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:#ffffff0c;border:2px solid transparent;text-align:left;width:100%;margin-bottom:6px}
+.lv.on{border-color:#a78bfa;background:#8b5cf633}.lv i{font-style:normal;font-size:22px}.lv small{display:block;color:#9ca3af}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.seg button{padding:.5rem;border-radius:10px;background:#ffffff12}.seg .on{background:#8b5cf6}
+.code{font-size:38px;font-weight:800;letter-spacing:8px;text-align:center;color:#fbbf24;text-shadow:0 0 18px #f59e0b88}
+.muted{color:#9ca3af;font-size:12px}.li{display:flex;justify-content:space-between;padding:7px 4px;border-bottom:1px solid #ffffff14;font-size:14px}
+#toasts{position:fixed;top:8px;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:6px;z-index:80;pointer-events:none}
+.t{padding:.6rem 1.1rem;border-radius:12px;font-weight:700;font-size:14px;animation:sl .25s;box-shadow:0 6px 24px #000a;background:#059669}.t.red{background:#dc2626}.t.gold{background:#d97706}
+@keyframes sl{from{transform:translateY(-30px);opacity:0}}
+@media (orientation:landscape){:root{--b:min(84vh,46vw)}.scr{flex-wrap:nowrap}#side{width:min(44vw,420px);max-height:96vh;overflow-y:auto}.logo{font-size:64px}}
+</style>
 </head>
 <body>
 <div id="toasts"></div>
-<div id="ban" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4"><div class="glass bg-slate-900 p-6 text-center w-full max-w-sm">
-  <div id="banT" class="text-4xl font-extrabold mb-2"></div><div id="banS" class="text-gray-300 mb-4"></div>
-  <div class="flex gap-2"><button class="btn flex-1" onclick="$('ban').classList.add('hidden');newGame(true)">Ván mới</button><button class="btn flex-1" style="background:#374151" onclick="$('ban').classList.add('hidden')">Đóng</button></div></div></div>
-<div id="app">
-  <div id="board"></div>
+
+<div id="menu" class="scr"><div class="mwrap">
+  <div class="brand"><div class="logo">♞</div><h1>APEX CHESS</h1><p>Cờ vua · Bot thông minh · Chơi online</p><button id="acct" class="chip" onclick="openAuth()">👤 Đăng nhập</button></div>
+  <div class="mbtns">
+    <button class="mb big" onclick="openM('onM')"><i>🌐</i><b>Chơi Online với bạn bè</b><span>Tạo phòng · gửi mã · chơi ngay</span></button>
+    <button class="mb" onclick="openM('botM')"><i>🤖</i><b>Chơi với Bot</b><span>5 cấp độ</span></button>
+    <button class="mb" onclick="startLocal()"><i>👥</i><b>2 người 1 máy</b><span>Chơi chung</span></button>
+    <button class="mb" onclick="openLB()"><i>🏆</i><b>Xếp hạng</b><span>Elo · thắng · chuỗi</span></button>
+    <button class="mb" onclick="openM('setM')"><i>⚙️</i><b>Cài đặt</b><span>Giao diện bàn cờ</span></button>
+  </div></div></div>
+
+<div id="game" class="scr hidden">
+  <div id="bw"><div id="board"></div></div>
   <aside id="side">
-    <header class="glass px-3 py-2 flex items-center justify-between gap-2">
-      <h1 class="font-extrabold"><span class="text-amber-400">♞</span> APEX CHESS</h1>
-      <div class="flex items-center gap-2"><span id="who" class="text-xs text-gray-300">Khách</span>
-      <button class="btn" onclick="openLB()">🏆</button><button id="authBtn" class="btn" onclick="openAuth()">Đăng nhập</button></div>
-    </header>
-    <div id="status" class="glass text-center py-2 font-semibold text-emerald-300">Lượt Trắng</div>
-    <section class="glass p-3 grid grid-cols-2 gap-2">
-      <label class="text-xs text-gray-400">Chế độ<select id="mode" onchange="setMode()"><option value="bot">Chơi với Bot</option><option value="local">2 người 1 máy</option><option value="room">Phòng online</option></select></label>
-      <label class="text-xs text-gray-400">Màu quân<select id="col" onchange="newGame()"><option value="w">Trắng</option><option value="b">Đen</option></select></label>
-      <label id="lvlW" class="text-xs text-gray-400 col-span-2">Cấp độ Bot<select id="lvl" onchange="lvl=this.value;newGame()">
-        <option value="ez">ez – ngẫu nhiên</option><option value="nor" selected>nor – ưu tiên ăn quân</option><option value="hard">hard – đánh giá thế cờ</option><option value="hacker">hacker – minimax độ sâu 2</option><option value="god">god – alpha-beta độ sâu 3</option></select></label>
-      <div id="roomW" class="col-span-2 hidden space-y-2">
-        <div class="flex gap-2"><button class="btn flex-1" onclick="createRoom()">Tạo phòng</button><input id="code" maxlength="5" placeholder="MÃ" class="uppercase text-center"><button class="btn" onclick="joinRoom()">Vào</button></div>
-        <div id="roomInfo" class="text-xs text-gray-400">Tạo phòng rồi gửi mã cho bạn bè để cùng chơi.</div></div>
-      <button class="btn col-span-2" onclick="newGame(true)">Ván mới</button>
-    </section>
-    <section id="adm" class="hidden p-3 rounded-2xl border border-red-500/70 bg-red-950/40 shadow-[0_0_30px_rgba(220,38,38,.4)]">
-      <h2 class="text-red-400 font-extrabold mb-2">☠ BẢNG ADMIN</h2>
-      <div class="grid grid-cols-2 gap-2">
-        <button id="autoBtn" class="btn rbtn" onclick="toggleAuto()">Tự động chơi: TẮT</button><button class="btn rbtn" onclick="autoWin()">Tự thắng</button>
-        <button class="btn rbtn" onclick="flipB()">Lật bàn cờ</button><button class="btn rbtn" onclick="undoM()">Đi lại</button>
-        <input id="fen" class="col-span-2" placeholder="Dán FEN vào đây"><button class="btn rbtn" onclick="loadFen()">Nạp FEN</button><button class="btn rbtn" onclick="swapTurn()">Bỏ lượt</button></div>
-    </section>
+    <div class="card pl" id="pTop"></div>
+    <div class="card st" id="status">Lượt Trắng</div>
+    <div class="card" id="moves"></div>
+    <div class="card pl" id="pBot"></div>
+    <div class="row"><button class="btn gr" onclick="toMenu()">☰ Menu</button><button class="btn gr" onclick="newGame(true)">⟲ Mới</button><button class="btn gr" onclick="flipB()">⇅ Lật</button><button class="btn gr" onclick="resign()">🏳 Hàng</button></div>
+    <div id="adm" class="hidden"><h3>☠ BẢNG ADMIN</h3><div class="g2">
+      <button id="autoBtn" class="btn rd" onclick="toggleAuto()">Tự động chơi: TẮT</button><button class="btn rd" onclick="autoWin()">Tự thắng</button>
+      <button class="btn rd" onclick="undoM()">Đi lại</button><button class="btn rd" onclick="swapTurn()">Bỏ lượt</button>
+      <input id="fen" style="grid-column:span 2" placeholder="Dán FEN vào đây"><button class="btn rd" style="grid-column:span 2" onclick="loadFen()">Nạp FEN</button></div></div>
   </aside>
 </div>
-<div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-  <div class="glass bg-slate-900 p-5 w-full max-w-sm space-y-3">
-    <h3 class="font-bold text-lg">Tài khoản</h3>
-    <input id="u" placeholder="Tên đăng nhập" autocomplete="username">
-    <input id="p" type="password" placeholder="Mật khẩu" autocomplete="current-password">
-    <div id="msg" class="text-sm text-red-400 min-h-[1.2em]"></div>
-    <div class="flex gap-2"><button class="btn flex-1" onclick="doAuth('login')">Đăng nhập</button>
-      <button class="btn flex-1" onclick="doAuth('reg')">Đăng ký</button>
-      <button class="btn" style="background:#374151" onclick="$('modal').classList.add('hidden')">✕</button></div>
-  </div>
-</div>
 
-<div id="lbm" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-  <div class="glass bg-slate-900 p-4 w-full max-w-sm">
-    <div class="flex justify-between mb-2"><h3 class="font-bold text-lg">🏆 Bảng xếp hạng</h3><button onclick="$('lbm').classList.add('hidden')">✕</button></div>
-    <div id="lbT" class="flex flex-wrap gap-1 mb-2"></div><div id="lbL" class="text-sm max-h-80 overflow-y-auto"></div>
-  </div>
-</div>
+<div id="botM" class="mod hidden"><div class="box">
+  <div class="hd"><h3>🤖 Chơi với Bot</h3><button class="x" onclick="closeM('botM')">✕</button></div>
+  <div id="lvls"></div>
+  <div class="seg" id="cols"><button data-c="w" class="on">⚪ Trắng</button><button data-c="b">⚫ Đen</button><button data-c="r">🎲 Ngẫu nhiên</button></div>
+  <button class="btn" onclick="startBot()">Bắt đầu</button></div></div>
+
+<div id="onM" class="mod hidden"><div class="box">
+  <div class="hd"><h3>🌐 Chơi Online</h3><button class="x" onclick="closeM('onM')">✕</button></div>
+  <div id="onHome">
+    <button class="btn" style="width:100%" onclick="createRoom()">➕ Tạo phòng mới</button>
+    <p class="muted" style="text-align:center">hoặc nhập mã phòng của bạn bè</p>
+    <div class="g2"><input id="jc" maxlength="6" placeholder="MÃ PHÒNG" style="text-transform:uppercase;text-align:center;letter-spacing:4px"><button class="btn" onclick="joinRoom()">Vào phòng</button></div></div>
+  <div id="onWait" class="hidden"><div class="muted" style="text-align:center">Mã phòng của bạn</div><div class="code" id="rc">------</div>
+    <div class="g2" style="margin-top:8px"><button class="btn" onclick="shareCode()">📤 Chia sẻ mã</button><button class="btn gr" onclick="leaveRoom()">Hủy phòng</button></div></div>
+  <div id="onInfo" class="muted" style="text-align:center">Chủ phòng cầm quân Trắng. Cả hai cần có Internet.</div>
+  <div class="hd"><span class="muted" id="net">● Chưa kiểm tra mạng</span><button class="chip" onclick="netTest()">Kiểm tra kết nối</button></div></div></div>
+
+<div id="lbM" class="mod hidden"><div class="box"><div class="hd"><h3>🏆 Bảng xếp hạng</h3><button class="x" onclick="closeM('lbM')">✕</button></div>
+  <div class="seg" id="lbT" style="grid-template-columns:repeat(4,1fr)"></div><div id="lbL"></div><div class="muted">Xếp hạng các tài khoản trên thiết bị này.</div></div></div>
+
+<div id="setM" class="mod hidden"><div class="box"><div class="hd"><h3>⚙️ Cài đặt</h3><button class="x" onclick="closeM('setM')">✕</button></div>
+  <label class="muted">Giao diện bàn cờ<select id="th" onchange="setCfg()"><option value="wood">Gỗ cổ điển</option><option value="green">Xanh lá</option><option value="ocean">Đại dương</option><option value="neon">Tím neon</option></select></label>
+  <label class="muted">Âm thanh &amp; rung<select id="snd" onchange="setCfg()"><option value="1">Bật</option><option value="0">Tắt</option></select></label></div></div>
+
+<div id="authM" class="mod hidden"><div class="box"><div class="hd"><h3>👤 Tài khoản</h3><button class="x" onclick="closeM('authM')">✕</button></div>
+  <input id="au" placeholder="Tên đăng nhập" autocomplete="username"><input id="ap" type="password" placeholder="Mật khẩu" autocomplete="current-password">
+  <div id="amsg" class="muted" style="min-height:1.2em"></div>
+  <div class="g2"><button class="btn" onclick="doAuth('login')">Đăng nhập</button><button class="btn gr" onclick="doAuth('reg')">Đăng ký</button></div></div></div>
+
+<div id="banM" class="mod hidden"><div class="box" style="text-align:center"><div id="banT" style="font-size:34px;font-weight:800"></div><div id="banS" class="muted" style="font-size:14px"></div>
+  <div class="g2"><button class="btn" onclick="closeM('banM');newGame(true)">Ván mới</button><button class="btn gr" onclick="closeM('banM')">Đóng</button></div></div></div>
+
 <script>
 const $=id=>document.getElementById(id);
-const mem={};
-const S={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return k in mem?mem[k]:d}},
- set(k,v){mem[k]=v;try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const GL={p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'},V={p:100,n:320,b:330,r:500,q:900,k:0};
-let g=new Chess(),sel=null,flip=false,mode='bot',me='w',lvl='nor',over=null,auto=false,room=null,bc=null,busy=false,user=null;
-
-/* ---------- Firebase config: PASTE YOUR VALUES ---------- */
-const FB={apiKey:"PASTE",authDomain:"PASTE.firebaseapp.com",databaseURL:"https://PASTE-default-rtdb.firebaseio.com",projectId:"PASTE",appId:"PASTE"};
-let auth,db,uid=null,prof=null,oppUid=null,oppIn=false,rref=null,fin=false;
-try{firebase.initializeApp(FB);auth=firebase.auth();db=firebase.database()}catch(e){}
-const isAdmin=()=>user==='admin';
-const em=n=>n+'@apexchess.app',DEF={elo:1000,w:0,l:0,d:0,gw:0,st:0,cs:0};
-function openAuth(){
-  if(user){if(auth)auth.signOut();else{user=null;prof=null;refreshUser()}return}
-  $('msg').textContent='';$('modal').classList.remove('hidden')}
-async function doAuth(t){
-  const n=$('u').value.trim().toLowerCase(),p=$('p').value;
-  if(!/^[a-z0-9_]{3,16}$/.test(n)||p.length<6){$('msg').textContent='Tên 3-16 ký tự (a-z, 0-9, _), mật khẩu từ 6 ký tự.';return}
-  if(!db)return localAuth(t,n,p);
-  try{
-    if(t==='reg'){
-      const c=await auth.createUserWithEmailAndPassword(em(n),p);
-      await db.ref('users/'+c.user.uid).set(Object.assign({name:n},DEF))}
-    else await auth.signInWithEmailAndPassword(em(n),p);
-    $('modal').classList.add('hidden');$('p').value=''
-  }catch(e){const k=e.code||'';$('msg').textContent=k.includes('email-already')?'Tên đã được dùng.':(k.includes('invalid-credential')||k.includes('wrong-password')||k.includes('user-not-found'))?'Sai tên đăng nhập hoặc mật khẩu.':k.includes('network')?'Lỗi mạng.':String(e.message)}}
-const hash=s=>{let a=5381;s+='#apex';for(const c of s)a=((a<<5)+a+c.charCodeAt(0))>>>0;return a.toString(36)};
-function localAuth(t,n,p){
-  const us=S.get('cu',{});if(!us.admin)us.admin=hash('admin123');
-  if(t==='reg'){if(us[n]){$('msg').textContent='Tên đã được dùng.';return}us[n]=hash(p)}
-  else if(us[n]!==hash(p)){$('msg').textContent='Sai tên đăng nhập hoặc mật khẩu.';return}
-  S.set('cu',us);user=n;prof=Object.assign({},DEF);$('modal').classList.add('hidden');$('p').value='';refreshUser();toast('Chào '+n,'ok')}
-if(auth)auth.onAuthStateChanged(async u=>{
-  uid=u?u.uid:null;prof=null;user=null;
-  if(u){const s=await db.ref('users/'+uid).get();prof=Object.assign({},DEF,s.val());user=prof.name}
-  refreshUser()});
-function refreshUser(){
-  $('who').textContent=user?(isAdmin()?'👑 admin':user)+(prof?' · '+prof.elo:''):'Khách';
-  $('authBtn').textContent=user?'Đăng xuất':'Đăng nhập';
-  $('adm').classList.toggle('hidden',!isAdmin());
-  if(!isAdmin()&&auto){auto=false;updAuto()}}
-
-/* ---------- Stats & leaderboards ---------- */
-const up=(p,res,d,gw)=>{p=Object.assign({},DEF,p);p.elo=Math.max(100,Math.round(p.elo+d));
-  if(res==='w'){p.w++;p.cs++;p.st=Math.max(p.st,p.cs);if(gw)p.gw++}else if(res==='l'){p.l++;p.cs=0}else p.d++;return p};
-async function finish(){
-  if(fin||!g.game_over()||over)return;fin=true;
-  if(!uid||mode==='local'||isAdmin()||auto)return;
-  const win=g.in_checkmate()?(g.turn()==='w'?'b':'w'):null,res=!win?'d':win===me?'w':'l';
-  try{
-    if(mode==='bot'){
-      const d={ez:3,nor:6,hard:10,hacker:16,god:24}[lvl];
-      prof=up(prof,res,res==='w'?d:res==='l'?-d/2:0,res==='w'&&lvl==='god');
-      await db.ref('users/'+uid).update(prof)}
-    else if(mode==='room'&&oppUid){
-      const o=Object.assign({},DEF,(await db.ref('users/'+oppUid).get()).val());
-      const E=1/(1+Math.pow(10,(o.elo-prof.elo)/400)),d=32*((res==='w'?1:res==='d'?.5:0)-E);
-      prof=up(prof,res,d,false);
-      await db.ref('users/'+uid).update(prof);
-      await db.ref('users/'+oppUid).update(up(o,res==='w'?'l':res==='l'?'w':'d',-d,false))}
-    refreshUser()}catch(e){}}
-const LB={elo:'Elo',w:'Thắng',gw:'Diệt God',st:'Chuỗi thắng'};
-function openLB(){$('lbm').classList.remove('hidden');lb('elo')}
-async function lb(k){
-  $('lbT').innerHTML=Object.entries(LB).map(([a,b])=>`<button class="btn" style="${a===k?'':'opacity:.5'}" onclick="lb('${a}')">${b}</button>`).join('');
-  if(!db){$('lbL').textContent='Chưa cấu hình Firebase.';return}
-  $('lbL').textContent='Đang tải…';
-  try{const s=await db.ref('users').orderByChild(k).limitToLast(20).get(),a=[];
-    s.forEach(c=>{a.push(c.val())});a.reverse();
-    $('lbL').innerHTML=a.map((p,i)=>`<div class="flex justify-between py-1 border-b border-white/10"><span>${i+1}. ${p.name}</span><b>${p[k]||0}</b></div>`).join('')||'Chưa có dữ liệu'}
-  catch(e){$('lbL').textContent='Lỗi: '+e.message}}
-
+const V={p:100,n:320,b:330,r:500,q:900,k:0},GL={p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'};
+const mem={},S={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return k in mem?mem[k]:d}},set(k,v){mem[k]=v;try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let g=new Chess(),sel=null,flip=false,mode='bot',me='w',lvl='nor',over=null,auto=false,busy=false,user=null,ro=null,selL='nor',selC='w',pend=false;
+const CID=Math.random().toString(36).slice(2,10),NT='https://ntfy.sh/',DEF={elo:1000,w:0,l:0,d:0,gw:0,st:0,cs:0};
 /* ---------- Bot engine ---------- */
 function bd(c){const r=[];for(const row of c.fen().split(' ')[0].split('/')){const a=[];for(const ch of row){if(ch>='1'&&ch<='8'){for(let i=0;i<+ch;i++)a.push(null)}else a.push({type:ch.toLowerCase(),color:ch===ch.toUpperCase()?'w':'b'})}r.push(a)}return r}
 function ev(c,q){
@@ -243,136 +211,235 @@ function pick(c,level){
 function think(l){
   try{return pick(g,l)}catch(e){if(!window.ERR){window.ERR=1;toast('Lỗi engine: '+e.message,'red')}const ms=g.moves({verbose:true});return ms.length?rnd(ms):null}}
 
-/* ---------- Game flow ---------- */
-function render(){
-  const b=$('board');b.innerHTML='';
-  const legal=sel?g.moves({square:sel,verbose:true}).map(m=>m.to):[];
-  const pl=g.history().length;seenAt.length=pl;seenAt[pl]=g.fen().split(' ').slice(0,4).join(' ');
-  const last=g.history({verbose:true}).slice(-1)[0],ck=g.in_check()?g.turn():null;
-  for(let i=0;i<64;i++){
-    const r=flip?7-(i>>3):i>>3,f=flip?7-(i&7):i&7,sq='abcdefgh'[f]+(8-r),p=g.get(sq),d=document.createElement('div');
-    let c='sq '+((r+f)%2?'dk':'lt');
-    if(sq===sel)c+=' sel';else if(last&&(last.from===sq||last.to===sq))c+=' lm';
-    if(p&&p.type==='k'&&p.color===ck)c+=' ck';
-    if(p&&legal.includes(sq))c+=' cap';
-    d.className=c;let h='';
-    if(p)h+=`<span class="pc ${p.color}">${GL[p.type]}\uFE0E</span>`;
-    if(!p&&legal.includes(sq))h+='<i class="dot"></i>';
-    if(i>>3===7)h+=`<b class="co f">${'abcdefgh'[f]}</b>`;
-    if((i&7)===0)h+=`<b class="co r">${8-r}</b>`;
-    d.innerHTML=h;d.onclick=()=>tap(sq);b.appendChild(d)}
-  let t;
-  if(over)t=over;
-  else if(g.in_checkmate())t='Chiếu hết! '+(g.turn()==='w'?'Đen':'Trắng')+' thắng';
-  else if(g.in_draw()||g.in_stalemate())t='Hòa: '+drawWhy();
-  else t='Lượt '+(g.turn()==='w'?'Trắng':'Đen')+(g.in_check()?' – CHIẾU!':'')+(busy?' (đang suy nghĩ…)':'');
-  $('status').textContent=t}
-/* ---------- Notifications ---------- */
-function beep(f){try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),v=a.createGain();o.frequency.value=f;o.connect(v);v.connect(a.destination);v.gain.setValueAtTime(.15,a.currentTime);v.gain.exponentialRampToValueAtTime(.001,a.currentTime+.35);o.start();o.stop(a.currentTime+.35)}catch(e){}}
-function toast(m,k){
-  const d=document.createElement('div');d.className='t '+(k||'ok');d.textContent=m;$('toasts').appendChild(d);
-  try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}beep(k==='red'?330:660);setTimeout(()=>d.remove(),3200)}
-function banner(t,sub,win){
-  $('banT').textContent=t;$('banS').textContent=sub;$('ban').classList.remove('hidden');
-  try{navigator.vibrate&&navigator.vibrate(win?[100,60,100,60,200]:[300])}catch(e){}beep(win?880:220)}
+
+/* ---------- helpers ---------- */
+let cfg=S.get('cfg',{th:'wood',snd:true});
+function setCfg(){cfg={th:$('th').value,snd:$('snd').value==='1'};S.set('cfg',cfg);applyCfg()}
+function applyCfg(){document.documentElement.dataset.th=cfg.th;$('th').value=cfg.th;$('snd').value=cfg.snd?'1':'0'}
+function show(id){['menu','game'].forEach(x=>$(x).classList.toggle('hidden',x!==id))}
+const openM=id=>$(id).classList.remove('hidden'),closeM=id=>$(id).classList.add('hidden');
+function beep(f){if(!cfg.snd)return;try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),v=a.createGain();o.frequency.value=f;o.connect(v);v.connect(a.destination);v.gain.setValueAtTime(.15,a.currentTime);v.gain.exponentialRampToValueAtTime(.001,a.currentTime+.35);o.start();o.stop(a.currentTime+.35)}catch(e){}}
+function vib(p){if(cfg.snd)try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
+function toast(m,k){const d=document.createElement('div');d.className='t '+(k||'');d.textContent=m;$('toasts').appendChild(d);vib(120);beep(k==='red'?330:660);setTimeout(()=>d.remove(),3200)}
+function banner(t,s,win){$('banT').textContent=t;$('banS').textContent=s;openM('banM');vib(win?[100,60,100,60,200]:[300]);beep(win?880:220)}
 function drawWhy(){
   if(g.in_stalemate())return 'Hết nước đi (stalemate): bên đến lượt không bị chiếu nhưng không còn nước hợp lệ.';
   if(g.insufficient_material())return 'Không đủ quân để chiếu hết.';
   if(g.in_threefold_repetition())return 'Lặp lại cùng một thế cờ 3 lần.';
   return 'Luật 50 nước không ăn quân hay đi tốt.'}
-function notify(m){
-  if(m&&m.flags&&m.flags.includes('p'))toast('♛ Tốt phong thành Hậu!','gold');
-  if(g.in_checkmate()){
-    const w=g.turn()==='w'?'b':'w',mine=mode==='local'||w===me;
-    banner(mode==='local'?'♚ CHIẾU HẾT':mine?'🏆 CHIẾN THẮNG!':'💀 THUA CUỘC','Chiếu hết! '+(w==='w'?'Trắng':'Đen')+' thắng',mine)}
-  else if(g.in_draw()||g.in_stalemate())banner('🤝 HÒA',drawWhy(),true);
-  else if(g.in_check())toast('⚠️ Chiếu tướng!','red')}
-const myTurn=()=>mode==='local'||g.turn()===me;
+
+/* ---------- accounts (on device) ---------- */
+const hash=s=>{let a=5381;s+='#apex';for(const c of s)a=((a<<5)+a+c.charCodeAt(0))>>>0;return a.toString(36)};
+function users(){const u=S.get('cu',{});if(!u.admin){u.admin=Object.assign({h:hash('admin123')},DEF);S.set('cu',u)}return u}
+const isAdmin=()=>user==='admin';
+function openAuth(){
+  if(user){user=null;S.set('cs',null);refreshUser();toast('Đã đăng xuất');return}
+  $('amsg').textContent='Tài khoản lưu trên máy này. Admin: admin / admin123';openM('authM')}
+function doAuth(t){
+  const n=$('au').value.trim().toLowerCase(),p=$('ap').value,us=users();
+  if(!/^[a-z0-9_]{3,16}$/.test(n)||p.length<4){$('amsg').textContent='Tên 3-16 ký tự (a-z, 0-9, _), mật khẩu từ 4 ký tự.';return}
+  if(t==='reg'){if(us[n]){$('amsg').textContent='Tên đã được dùng.';return}us[n]=Object.assign({h:hash(p)},DEF);S.set('cu',us)}
+  else if(!us[n]||us[n].h!==hash(p)){$('amsg').textContent='Sai tên đăng nhập hoặc mật khẩu.';return}
+  user=n;S.set('cs',n);$('ap').value='';closeM('authM');refreshUser();toast('Chào '+n)}
+function refreshUser(){
+  const u=user&&users()[user];
+  $('acct').textContent=user?(isAdmin()?'👑 ':'👤 ')+user+' · Elo '+u.elo:'👤 Đăng nhập';
+  $('adm').classList.toggle('hidden',!isAdmin());
+  if(!isAdmin()&&auto){auto=false;updAuto()}
+  cards()}
+function record(res){
+  if(!user||isAdmin()||auto||mode==='local')return;
+  const us=users(),p=us[user];let d;
+  if(mode==='bot'){const k={ez:3,nor:6,hard:10,hacker:16,god:24}[lvl];d=res==='w'?k:res==='l'?-k/2:0}
+  else{const oe=ro&&ro.oe||1000,E=1/(1+Math.pow(10,(oe-p.elo)/400));d=32*((res==='w'?1:res==='d'?.5:0)-E)}
+  p.elo=Math.max(100,Math.round(p.elo+d));
+  if(res==='w'){p.w++;p.cs++;p.st=Math.max(p.st,p.cs);if(mode==='bot'&&lvl==='god')p.gw++}else if(res==='l'){p.l++;p.cs=0}else p.d++;
+  S.set('cu',us);refreshUser()}
+const LB={elo:'Elo',w:'Thắng',gw:'Diệt God',st:'Chuỗi'};
+function openLB(){openM('lbM');lb('elo')}
+function lb(k){
+  $('lbT').innerHTML=Object.entries(LB).map(([a,b])=>`<button class="${a===k?'on':''}" onclick="lb('${a}')">${b}</button>`).join('');
+  const a=Object.entries(users()).map(([n,p])=>({n,v:p[k]||0})).sort((x,y)=>y.v-x.v).slice(0,20);
+  $('lbL').innerHTML=a.map((p,i)=>`<div class="li"><span>${['🥇','🥈','🥉'][i]||i+1+'.'} ${p.n}${p.n===user?' (bạn)':''}</span><b>${p.v}</b></div>`).join('')}
+
+/* ---------- menus ---------- */
+const LV=[['ez','🐣','ez','Đi ngẫu nhiên'],['nor','🙂','nor','Ưu tiên ăn quân'],['hard','😎','hard','Đánh giá thế cờ'],['hacker','🧑‍💻','hacker','Minimax độ sâu 2'],['god','👑','god','Alpha-beta độ sâu 3-4']];
+function drawLv(){$('lvls').innerHTML=LV.map(l=>`<button class="lv ${l[0]===selL?'on':''}" onclick="selL='${l[0]}';drawLv()"><i>${l[1]}</i><div><b>${l[2]}</b><small>${l[3]}</small></div></button>`).join('')}
+document.querySelectorAll('#cols button').forEach(b=>b.onclick=()=>{selC=b.dataset.c;document.querySelectorAll('#cols button').forEach(x=>x.classList.toggle('on',x===b))});
+function startBot(){mode='bot';lvl=selL;me=selC==='r'?rnd(['w','b']):selC;closeM('botM');begin()}
+function startLocal(){mode='local';me='w';begin()}
+function begin(){newGame();show('game')}
+function toMenu(){if(mode==='online')leaveRoom(true);auto=false;updAuto();busy=false;show('menu')}
+
+/* ---------- board ---------- */
+const pimg=p=>`<img class="pc" draggable="false" src="https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/${p.color}${p.type.toUpperCase()}.svg" onerror="fb(this,'${p.type}','${p.color}')">`;
+function fb(el,t,c){el.outerHTML=`<span class="pc g ${c}">${GL[t]}\uFE0E</span>`}
+function names(){
+  const my=user||'Khách';
+  if(mode==='bot')return me==='w'?[['🤖','Bot '+lvl,'Đen'],['😀',my,'Trắng']]:[['🤖','Bot '+lvl,'Trắng'],['😀',my,'Đen']];
+  if(mode==='online'&&ro)return[['🌐',ro.on||'Đối thủ',me==='w'?'Đen':'Trắng'],['😀',my,me==='w'?'Trắng':'Đen']];
+  return[['⚫','Quân Đen',''],['⚪','Quân Trắng','']]}
+function cards(){
+  const [t,b]=names(),f=x=>`<div class="av">${x[0]}</div><div><b>${x[1]}</b><small>${x[2]}</small></div>`;
+  $('pTop').innerHTML=f(t);$('pBot').innerHTML=f(b);
+  const tt=g.turn(),topIsBlack=!flip;
+  $('pTop').classList.toggle('on',!over&&(topIsBlack?tt==='b':tt==='w'));
+  $('pBot').classList.toggle('on',!over&&(topIsBlack?tt==='w':tt==='b'))}
+function render(){
+  const b=$('board');b.innerHTML='';
+  const pl=g.history().length;seenAt.length=pl;seenAt[pl]=g.fen().split(' ').slice(0,4).join(' ');
+  const legal=sel?g.moves({square:sel,verbose:true}).map(m=>m.to):[];
+  const hist=g.history({verbose:true}),last=hist[hist.length-1],ck=g.in_check()?g.turn():null;
+  for(let i=0;i<64;i++){
+    const r=flip?7-(i>>3):i>>3,f=flip?7-(i&7):i&7,sq='abcdefgh'[f]+(8-r),p=g.get(sq),d=document.createElement('div');
+    let c='sq'+((r+f)%2?' d':'');
+    if(sq===sel)c+=' sel';else if(last&&(last.from===sq||last.to===sq))c+=' lm';
+    if(p&&p.type==='k'&&p.color===ck)c+=' ck';
+    if(p&&legal.includes(sq))c+=' cap';
+    d.className=c;let h=p?pimg(p):'';
+    if(!p&&legal.includes(sq))h+='<i class="dot"></i>';
+    if(i>>3===7)h+=`<b class="co f">${'abcdefgh'[f]}</b>`;
+    if((i&7)===0)h+=`<b class="co r">${8-r}</b>`;
+    d.innerHTML=h;d.onclick=()=>tap(sq);b.appendChild(d)}
+  let t;
+  if(over)t=over.win?over.why:'Hòa: '+over.why;
+  else t='Lượt '+(g.turn()==='w'?'Trắng':'Đen')+(g.in_check()?' – CHIẾU!':'')+(busy?' (đang suy nghĩ…)':'');
+  $('status').textContent=t;
+  const sans=g.history();let mh='';
+  for(let i=0;i<sans.length;i+=2)mh+=`<span><i>${i/2+1}.</i>${sans[i]} ${sans[i+1]||''}</span>`;
+  $('moves').innerHTML=mh||'<span class="muted">Chưa có nước đi</span>';$('moves').scrollTop=1e5;
+  cards()}
+function canMove(){
+  if(over||busy||g.game_over())return false;
+  if(mode==='local')return true;
+  if(mode==='online'&&!(ro&&ro.ready))return false;
+  return g.turn()===me}
 function tap(sq){
-  if(over||busy||g.game_over()||!myTurn()||(mode==='room'&&!oppIn))return;
+  if(!canMove())return;
   const p=g.get(sq);
   if(sel&&g.moves({square:sel,verbose:true}).some(m=>m.to===sq)){doMove(sel,sq);return}
   sel=(p&&p.color===g.turn())?sq:null;render()}
 function doMove(from,to,remote){
-  const m=g.move({from,to,promotion:'q'});if(!m)return;
+  const m=g.move({from,to,promotion:'q'});if(!m)return false;
   sel=null;
-  if(mode==='room'&&!remote&&rref)rref.update({fen:g.fen(),last:{p:m.flags.includes('p')}});
-  render();notify(m);finish();after()}
+  if(mode==='online'&&!remote&&ro){ro.ply++;rpub({t:'mv',n:ro.ply,fen:g.fen(),from,to})}
+  afterMove(m);return true}
+function afterMove(m){render();checkEnd();notify(m);after()}
+function notify(m){
+  if(m&&m.flags&&m.flags.includes('p'))toast('♛ Tốt phong thành Hậu!','gold');
+  if(!g.game_over()&&g.in_check())toast('⚠️ Chiếu tướng!','red')}
+function checkEnd(){
+  if(over)return;
+  if(g.in_checkmate())endGame(g.turn()==='w'?'b':'w','Chiếu hết!');
+  else if(g.in_draw()||g.in_stalemate())endGame(null,drawWhy())}
+function endGame(win,why){
+  if(over)return;over={win,why};busy=false;
+  const mine=mode==='local'?true:win===me;
+  banner(!win?'🤝 HÒA':mode==='local'?'♚ '+(win==='w'?'TRẮNG':'ĐEN')+' THẮNG':mine?'🏆 CHIẾN THẮNG!':'💀 THUA CUỘC',why,mine||!win);
+  record(!win?'d':mine?'w':'l');render()}
 function after(){
   if(over||g.game_over())return;
   if(mode==='bot'&&g.turn()!==me){
     busy=true;render();
     setTimeout(()=>{const m=think(lvl);busy=false;if(m)doMove(m.from,m.to);else render()},250)}
-  else if(auto&&isAdmin()&&(mode==='local'||g.turn()===me)&&!(mode==='room'&&!oppIn)){
+  else if(auto&&isAdmin()&&(mode==='local'||g.turn()===me)&&!(mode==='online'&&!(ro&&ro.ready))){
     busy=true;render();
     setTimeout(()=>{const m=think('god');busy=false;if(m)doMove(m.from,m.to);else render()},350)}}
 function newGame(btn){
-  me=$('col').value;
   g=new Chess();sel=null;over=null;busy=false;flip=me==='b';
-  fin=false;if(btn&&mode==='room'&&rref)rref.update({fen:START});
+  if(mode==='online'&&ro){ro.ply=0;if(btn)rpub({t:'new'})}
   render();after()}
-function setMode(){
-  mode=$('mode').value;
-  $('lvlW').classList.toggle('hidden',mode!=='bot');
-  $('roomW').classList.toggle('hidden',mode!=='room');
-  if(mode!=='room'&&rref){rref.off();rref=null;room=null}
-  newGame()}
+function flipB(){flip=!flip;render()}
+function resign(){
+  if(over)return;
+  if(!pend){pend=true;toast('Bấm 🏳 lần nữa để đầu hàng','gold');setTimeout(()=>pend=false,3000);return}
+  pend=false;const loser=mode==='local'?g.turn():me;
+  if(mode==='online')rpub({t:'resign'});
+  endGame(loser==='w'?'b':'w','Bên '+(loser==='w'?'Trắng':'Đen')+' đã đầu hàng')}
 
-/* ---------- Real online rooms (Firebase) ---------- */
-const START=new Chess().fen();
-function listen(code){
-  if(rref)rref.off();oppIn=false;room=code;rref=db.ref('rooms/'+code);
-  rref.on('value',s=>{
-    const d=s.val();if(!d)return;
-    const o=me==='w'?d.black:d.white;if(o&&!oppIn)toast(me==='w'?'👋 '+o.name+' đã vào phòng của bạn!':'✅ Đã kết nối với '+o.name,'ok');oppIn=!!o;oppUid=o?o.uid:null;
-    $('roomInfo').textContent='Phòng '+code+' · bạn cầm quân '+(me==='w'?'Trắng':'Đen')+' · đối thủ: '+(o?o.name:'đang chờ…');
-    if(d.fen===START)fin=false;
-    if(d.fen!==g.fen()){g.load(d.fen);sel=null;render();notify({flags:d.last&&d.last.p?'p':''})}else render()})}
-async function createRoom(){
-  if(!db){toast('Phòng online cần cấu hình Firebase','red');return}if(!uid){openAuth();return}
-  const c=Math.random().toString(36).slice(2,7).toUpperCase();
-  await db.ref('rooms/'+c).set({fen:START,white:{uid,name:user},ts:Date.now()});
-  $('col').value='w';me='w';flip=false;g=new Chess();over=null;fin=false;listen(c);render()}
+/* ---------- online: relay qua ntfy.sh (không cần đăng ký) ---------- */
+function setNet(ok){$('net').textContent=ok?'● Đã kết nối':'● Mất kết nối…';$('net').style.color=ok?'#34d399':'#f87171'}
+async function netTest(){
+  $('net').textContent='● Đang kiểm tra…';
+  try{const r=await fetch(NT+'v1/health'),j=await r.json();setNet(!!j.healthy);toast(j.healthy?'Máy chủ online hoạt động tốt':'Máy chủ đang lỗi',j.healthy?'':'red')}
+  catch(e){setNet(false);toast('Không có Internet hoặc máy chủ bị chặn','red')}}
+async function rpub(m){
+  if(!ro)return;m.cid=CID;m.ts=Date.now();const code=ro.code;
+  for(let i=0;i<4;i++){
+    try{const r=await fetch(NT+'apexchess-'+code,{method:'POST',body:JSON.stringify(m)});if(r.ok)return true}catch(e){}
+    await new Promise(r=>setTimeout(r,800*(i+1)))}
+  toast('Gửi dữ liệu thất bại, kiểm tra mạng','red');return false}
+function rsub(){
+  const es=new EventSource(NT+'apexchess-'+ro.code+'/sse?since=all');ro.es=es;
+  es.onopen=()=>setNet(true);es.onerror=()=>setNet(false);
+  es.onmessage=e=>{try{
+    const d=JSON.parse(e.data);if(!ro||(d.event&&d.event!=='message')||ro.seen.has(d.id))return;ro.seen.add(d.id);
+    const m=JSON.parse(d.message);if(m.cid===CID)return;rrecv(m,Date.now()/1000-d.time<90)}catch(x){}}}
+function rrecv(m,fresh){
+  const my={name:user||'Khách',elo:(user&&users()[user].elo)||1000};
+  if(m.t==='join'&&ro.host){
+    if(ro.gcid&&ro.gcid!==m.cid)return;
+    const first=!ro.ready;ro.gcid=m.cid;ro.on=m.name;ro.oe=m.elo;ro.ready=true;
+    rpub({t:'start',name:my.name,elo:my.elo});
+    if(first){toast('👋 '+m.name+' đã vào phòng!');startOnline()}}
+  else if(m.t==='start'&&!ro.host&&!ro.ready){ro.ready=true;ro.on=m.name;ro.oe=m.elo;toast('✅ Đã kết nối với '+m.name);startOnline()}
+  else if(!ro.ready)return;
+  else if(m.t==='mv'&&m.n>ro.ply){
+    let ok=false;if(m.from&&m.n===ro.ply+1)ok=!!g.move({from:m.from,to:m.to,promotion:'q'});
+    let mv=null;if(ok){const h=g.history({verbose:true});mv=h[h.length-1]}
+    else{g.load(m.fen);over=null}
+    ro.ply=m.n;sel=null;afterMove(mv)}
+  else if(m.t==='resign'&&!over)endGame(me,'Đối thủ đã đầu hàng')
+  else if(m.t==='new'){ro.ply=0;newGame(false);closeM('banM');toast('Đối thủ bắt đầu ván mới','gold')}
+  else if(m.t==='leave'&&fresh)toast('Đối thủ đã rời phòng','red')}
+function startOnline(){
+  mode='online';me=ro.host?'w':'b';closeM('onM');ro.ply=0;begin()}
+function newCode(){const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let c='';for(let i=0;i<6;i++)c+=a[Math.floor(Math.random()*a.length)];return c}
+function createRoom(){
+  leaveRoom(true);ro={code:newCode(),host:true,seen:new Set(),ready:false,ply:0};
+  $('rc').textContent=ro.code;$('onHome').classList.add('hidden');$('onWait').classList.remove('hidden');
+  $('onInfo').textContent='Đang chờ bạn bè vào phòng… (giữ màn hình này mở)';rsub()}
 async function joinRoom(){
-  if(!db){toast('Phòng online cần cấu hình Firebase','red');return}if(!uid){openAuth();return}
-  const c=$('code').value.trim().toUpperCase(),d=(await db.ref('rooms/'+c).get()).val();
-  if(!d){$('roomInfo').textContent='Không tìm thấy phòng.';return}
-  if(d.white.uid===uid)me='w';
-  else{if(d.black&&d.black.uid!==uid){$('roomInfo').textContent='Phòng đã đầy.';return}
-    await db.ref('rooms/'+c+'/black').set({uid,name:user});me='b'}
-  $('col').value=me;flip=me==='b';over=null;fin=false;g=new Chess();listen(c)}
+  const c=$('jc').value.trim().toUpperCase();
+  if(c.length!==6){toast('Mã phòng gồm 6 ký tự','red');return}
+  leaveRoom(true);ro={code:c,host:false,seen:new Set(),ready:false,ply:0};rsub();
+  $('onInfo').textContent='Đang vào phòng '+c+'…';
+  const my={t:'join',name:user||'Khách',elo:(user&&users()[user].elo)||1000};
+  for(let i=0;i<7&&ro&&ro.code===c&&!ro.ready;i++){await rpub(Object.assign({},my));await new Promise(r=>setTimeout(r,2500))}
+  if(ro&&ro.code===c&&!ro.ready){toast('Không tìm thấy phòng. Kiểm tra lại mã và nhờ bạn giữ màn hình tạo phòng.','red');$('onInfo').textContent='Chưa vào được phòng.';leaveRoom(true)}}
+function leaveRoom(quiet){
+  if(ro){if(ro.ready)rpub({t:'leave'});if(ro.es)ro.es.close();ro=null}
+  $('onHome').classList.remove('hidden');$('onWait').classList.add('hidden');
+  if(quiet!==true)closeM('onM');if(mode==='online')mode='bot'}
+async function shareCode(){
+  const t='Vào phòng cờ vua Apex Chess của mình, mã phòng: '+ro.code;
+  try{if(navigator.share){await navigator.share({text:t});return}await navigator.clipboard.writeText(t);toast('Đã sao chép mã phòng')}catch(e){toast('Mã phòng: '+ro.code)}}
 
-/* ---------- Admin ---------- */
+/* ---------- admin ---------- */
 function updAuto(){$('autoBtn').textContent='Tự động chơi: '+(auto?'BẬT':'TẮT')}
 function toggleAuto(){if(!isAdmin())return;auto=!auto;updAuto();toast('Tự động chơi '+(auto?'BẬT':'TẮT'),'gold');if(!busy)after()}
+function pushOv(){if(mode==='online'&&ro){ro.ply++;rpub({t:'mv',n:ro.ply,fen:g.fen()})}}
 function autoWin(){
   if(!isAdmin())return;
-  const f=me==='w'?'7k/6Q1/6K1/8/8/8/8/8 b - - 0 1':'8/8/8/8/8/6k1/6q1/7K w - - 0 1';
-  g=new Chess(f);over=null;sel=null;busy=false;flip=me==='b';
-  if(mode==='room'&&rref)rref.update({fen:g.fen(),last:{p:false}});
-  render();notify()}
-function flipB(){if(!isAdmin())return;flip=!flip;render();toast('Đã lật bàn cờ','gold')}
+  g=new Chess(me==='w'?'7k/6Q1/6K1/8/8/8/8/8 b - - 0 1':'8/8/8/8/8/6k1/6q1/7K w - - 0 1');
+  over=null;sel=null;busy=false;flip=me==='b';pushOv();render();checkEnd()}
 function undoM(){
-  if(!isAdmin())return;over=null;busy=false;g.undo();
-  if(mode==='bot'&&g.turn()!==me)g.undo();
-  render();toast('Đã đi lại','gold')}
+  if(!isAdmin())return;if(mode==='online'){toast('Không đi lại được khi chơi online','red');return}
+  over=null;busy=false;g.undo();if(mode==='bot'&&g.turn()!==me)g.undo();render();toast('Đã đi lại','gold')}
 function loadFen(){
   if(!isAdmin())return;
   const f=$('fen').value.trim();if(!f){toast('Hãy dán FEN vào ô trước','red');return}
   const n=new Chess();if(!n.load(f)){toast('FEN không hợp lệ','red');return}
-  g=n;over=null;sel=null;busy=false;
-  if(mode==='room'&&rref)rref.update({fen:g.fen()});
-  render();toast('Đã nạp FEN','gold');after()}
+  g=n;over=null;sel=null;busy=false;pushOv();render();toast('Đã nạp FEN','gold');after()}
 function swapTurn(){
   if(!isAdmin())return;
   const p=g.fen().split(' ');p[1]=p[1]==='w'?'b':'w';p[3]='-';
-  const n=new Chess();
-  if(!n.load(p.join(' '))){toast('Không bỏ lượt được: vua sẽ bị chiếu','red');return}
-  g=n;busy=false;
-  if(mode==='room'&&rref)rref.update({fen:g.fen()});
-  render();toast('Đã bỏ lượt','gold');after()}
+  const n=new Chess();if(!n.load(p.join(' '))){toast('Không bỏ lượt được: vua sẽ bị chiếu','red');return}
+  g=n;busy=false;pushOv();render();toast('Đã bỏ lượt','gold');after()}
 
-/* ---------- Init ---------- */
+/* ---------- init ---------- */
+applyCfg();drawLv();
+const sv=S.get('cs',null);if(sv&&users()[sv])user=sv;
 refreshUser();render();
 </script>
 </body>
