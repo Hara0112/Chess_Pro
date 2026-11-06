@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Apex Chess</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>♞</text></svg>">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+:root{color-scheme:dark;--b:min(94vw,480px)}
+body{background:radial-gradient(1200px 600px at 50% -10%,#1e1b4b,#09090f 60%);color:#e5e7eb;font-family:system-ui,sans-serif;min-height:100vh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#app{display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px}
+#side{width:min(94vw,480px)}#side>*+*{margin-top:8px}
+@media (orientation:landscape){:root{--b:min(88vh,50vw)}#app{flex-direction:row;min-height:100vh;justify-content:center;gap:18px}#side{width:min(42vw,400px);max-height:96vh;overflow-y:auto}}
+.glass{background:rgba(255,255,255,.07);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);border-radius:14px}
+#board{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);width:var(--b);height:var(--b);border:7px solid #3b2a1a;border-radius:12px;overflow:hidden;box-sizing:content-box;box-shadow:0 0 0 2px #d97706,0 14px 40px rgba(0,0,0,.7),0 0 60px rgba(245,158,11,.25)}
+.sq{min-width:0;min-height:0;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;user-select:none;cursor:pointer}
+.lt{background:linear-gradient(135deg,#f6e4bd,#e9d09b)}.dk{background:linear-gradient(135deg,#b98a58,#a3713c)}
+.sel{box-shadow:inset 0 0 0 100px rgba(250,204,21,.55)}.lm{box-shadow:inset 0 0 0 100px rgba(250,204,21,.32)}
+.ck{box-shadow:inset 0 0 0 100px rgba(239,68,68,.6)!important}.cap{box-shadow:inset 0 0 0 4px rgba(16,185,129,.95)}
+.co{position:absolute;font-size:calc(var(--b)/8*.18);opacity:.6;font-weight:700;color:#5b3a1a}.co.f{right:3px;bottom:1px}.co.r{left:3px;top:1px}
+.pc{font-size:calc(var(--b)/8*.8);line-height:1;filter:drop-shadow(0 3px 2px rgba(0,0,0,.55));animation:pop .2s}
+.pc.w{color:#fffbea;-webkit-text-stroke:1.3px #3b2a1a}.pc.b{color:#1c1917;-webkit-text-stroke:.8px #e7d5b0}
+.dot{position:absolute;width:26%;height:26%;border-radius:50%;background:rgba(16,185,129,.85);box-shadow:0 0 10px #10b981}
+@keyframes pop{from{transform:scale(.7);opacity:.5}to{transform:scale(1);opacity:1}}
+@keyframes sl{from{transform:translateY(-30px);opacity:0}to{transform:none;opacity:1}}
+.btn{padding:.5rem .9rem;border-radius:10px;background:linear-gradient(135deg,#6366f1,#a855f7);font-weight:600;font-size:.85rem;box-shadow:0 0 14px rgba(168,85,247,.4)}
+.btn:active{transform:scale(.96)}.rbtn{background:linear-gradient(135deg,#dc2626,#f97316);box-shadow:0 0 14px rgba(220,38,38,.6)}
+select,input{background:#111827;border:1px solid #374151;border-radius:8px;padding:.45rem .6rem;color:#fff;font-size:.85rem;width:100%}
+#toasts{position:fixed;top:8px;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:6px;z-index:60;pointer-events:none}
+.t{padding:.6rem 1.1rem;border-radius:12px;font-weight:700;animation:sl .25s;box-shadow:0 6px 24px rgba(0,0,0,.6)}
+.t.ok{background:#059669}.t.red{background:#dc2626}.t.gold{background:#d97706}
+</style></style>
+</head>
+<body>
+<div id="toasts"></div>
+<div id="ban" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4"><div class="glass bg-slate-900 p-6 text-center w-full max-w-sm">
+  <div id="banT" class="text-4xl font-extrabold mb-2"></div><div id="banS" class="text-gray-300 mb-4"></div>
+  <div class="flex gap-2"><button class="btn flex-1" onclick="$('ban').classList.add('hidden');newGame(true)">Ván mới</button><button class="btn flex-1" style="background:#374151" onclick="$('ban').classList.add('hidden')">Đóng</button></div></div></div>
+<div id="app">
+  <div id="board"></div>
+  <aside id="side">
+    <header class="glass px-3 py-2 flex items-center justify-between gap-2">
+      <h1 class="font-extrabold"><span class="text-amber-400">♞</span> APEX CHESS</h1>
+      <div class="flex items-center gap-2"><span id="who" class="text-xs text-gray-300">Khách</span>
+      <button class="btn" onclick="openLB()">🏆</button><button id="authBtn" class="btn" onclick="openAuth()">Đăng nhập</button></div>
+    </header>
+    <div id="status" class="glass text-center py-2 font-semibold text-emerald-300">Lượt Trắng</div>
+    <section class="glass p-3 grid grid-cols-2 gap-2">
+      <label class="text-xs text-gray-400">Chế độ<select id="mode" onchange="setMode()"><option value="bot">Chơi với Bot</option><option value="local">2 người 1 máy</option><option value="room">Phòng online</option></select></label>
+      <label class="text-xs text-gray-400">Màu quân<select id="col" onchange="newGame()"><option value="w">Trắng</option><option value="b">Đen</option></select></label>
+      <label id="lvlW" class="text-xs text-gray-400 col-span-2">Cấp độ Bot<select id="lvl" onchange="lvl=this.value;newGame()">
+        <option value="ez">ez – ngẫu nhiên</option><option value="nor" selected>nor – ưu tiên ăn quân</option><option value="hard">hard – đánh giá thế cờ</option><option value="hacker">hacker – minimax độ sâu 2</option><option value="god">god – alpha-beta độ sâu 3</option></select></label>
+      <div id="roomW" class="col-span-2 hidden space-y-2">
+        <div class="flex gap-2"><button class="btn flex-1" onclick="createRoom()">Tạo phòng</button><input id="code" maxlength="5" placeholder="MÃ" class="uppercase text-center"><button class="btn" onclick="joinRoom()">Vào</button></div>
+        <div id="roomInfo" class="text-xs text-gray-400">Tạo phòng rồi gửi mã cho bạn bè để cùng chơi.</div></div>
+      <button class="btn col-span-2" onclick="newGame(true)">Ván mới</button>
+    </section>
+    <section id="adm" class="hidden p-3 rounded-2xl border border-red-500/70 bg-red-950/40 shadow-[0_0_30px_rgba(220,38,38,.4)]">
+      <h2 class="text-red-400 font-extrabold mb-2">☠ BẢNG ADMIN</h2>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="autoBtn" class="btn rbtn" onclick="toggleAuto()">Tự động chơi: TẮT</button><button class="btn rbtn" onclick="autoWin()">Tự thắng</button>
+        <button class="btn rbtn" onclick="flipB()">Lật bàn cờ</button><button class="btn rbtn" onclick="undoM()">Đi lại</button>
+        <input id="fen" class="col-span-2" placeholder="Dán FEN vào đây"><button class="btn rbtn" onclick="loadFen()">Nạp FEN</button><button class="btn rbtn" onclick="swapTurn()">Bỏ lượt</button></div>
+    </section>
+  </aside>
+</div>
+<div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+  <div class="glass bg-slate-900 p-5 w-full max-w-sm space-y-3">
+    <h3 class="font-bold text-lg">Tài khoản</h3>
+    <input id="u" placeholder="Tên đăng nhập" autocomplete="username">
+    <input id="p" type="password" placeholder="Mật khẩu" autocomplete="current-password">
+    <div id="msg" class="text-sm text-red-400 min-h-[1.2em]"></div>
+    <div class="flex gap-2"><button class="btn flex-1" onclick="doAuth('login')">Đăng nhập</button>
+      <button class="btn flex-1" onclick="doAuth('reg')">Đăng ký</button>
+      <button class="btn" style="background:#374151" onclick="$('modal').classList.add('hidden')">✕</button></div>
+  </div>
+</div>
+
+<div id="lbm" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+  <div class="glass bg-slate-900 p-4 w-full max-w-sm">
+    <div class="flex justify-between mb-2"><h3 class="font-bold text-lg">🏆 Bảng xếp hạng</h3><button onclick="$('lbm').classList.add('hidden')">✕</button></div>
+    <div id="lbT" class="flex flex-wrap gap-1 mb-2"></div><div id="lbL" class="text-sm max-h-80 overflow-y-auto"></div>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const mem={};
+const S={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return k in mem?mem[k]:d}},
+ set(k,v){mem[k]=v;try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const GL={p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'},V={p:100,n:320,b:330,r:500,q:900,k:0};
+let g=new Chess(),sel=null,flip=false,mode='bot',me='w',lvl='nor',over=null,auto=false,room=null,bc=null,busy=false,user=null;
+
+/* ---------- Firebase config: PASTE YOUR VALUES ---------- */
+const FB={apiKey:"PASTE",authDomain:"PASTE.firebaseapp.com",databaseURL:"https://PASTE-default-rtdb.firebaseio.com",projectId:"PASTE",appId:"PASTE"};
+let auth,db,uid=null,prof=null,oppUid=null,oppIn=false,rref=null,fin=false;
+try{firebase.initializeApp(FB);auth=firebase.auth();db=firebase.database()}catch(e){}
+const isAdmin=()=>user==='admin';
+const em=n=>n+'@apexchess.app',DEF={elo:1000,w:0,l:0,d:0,gw:0,st:0,cs:0};
+function openAuth(){
+  if(user){if(auth)auth.signOut();else{user=null;prof=null;refreshUser()}return}
+  $('msg').textContent='';$('modal').classList.remove('hidden')}
+async function doAuth(t){
+  const n=$('u').value.trim().toLowerCase(),p=$('p').value;
+  if(!/^[a-z0-9_]{3,16}$/.test(n)||p.length<6){$('msg').textContent='Tên 3-16 ký tự (a-z, 0-9, _), mật khẩu từ 6 ký tự.';return}
+  if(!db)return localAuth(t,n,p);
+  try{
+    if(t==='reg'){
+      const c=await auth.createUserWithEmailAndPassword(em(n),p);
+      await db.ref('users/'+c.user.uid).set(Object.assign({name:n},DEF))}
+    else await auth.signInWithEmailAndPassword(em(n),p);
+    $('modal').classList.add('hidden');$('p').value=''
+  }catch(e){const k=e.code||'';$('msg').textContent=k.includes('email-already')?'Tên đã được dùng.':(k.includes('invalid-credential')||k.includes('wrong-password')||k.includes('user-not-found'))?'Sai tên đăng nhập hoặc mật khẩu.':k.includes('network')?'Lỗi mạng.':String(e.message)}}
+const hash=s=>{let a=5381;s+='#apex';for(const c of s)a=((a<<5)+a+c.charCodeAt(0))>>>0;return a.toString(36)};
+function localAuth(t,n,p){
+  const us=S.get('cu',{});if(!us.admin)us.admin=hash('admin123');
+  if(t==='reg'){if(us[n]){$('msg').textContent='Tên đã được dùng.';return}us[n]=hash(p)}
+  else if(us[n]!==hash(p)){$('msg').textContent='Sai tên đăng nhập hoặc mật khẩu.';return}
+  S.set('cu',us);user=n;prof=Object.assign({},DEF);$('modal').classList.add('hidden');$('p').value='';refreshUser();toast('Chào '+n,'ok')}
+if(auth)auth.onAuthStateChanged(async u=>{
+  uid=u?u.uid:null;prof=null;user=null;
+  if(u){const s=await db.ref('users/'+uid).get();prof=Object.assign({},DEF,s.val());user=prof.name}
+  refreshUser()});
+function refreshUser(){
+  $('who').textContent=user?(isAdmin()?'👑 admin':user)+(prof?' · '+prof.elo:''):'Khách';
+  $('authBtn').textContent=user?'Đăng xuất':'Đăng nhập';
+  $('adm').classList.toggle('hidden',!isAdmin());
+  if(!isAdmin()&&auto){auto=false;updAuto()}}
+
+/* ---------- Stats & leaderboards ---------- */
+const up=(p,res,d,gw)=>{p=Object.assign({},DEF,p);p.elo=Math.max(100,Math.round(p.elo+d));
+  if(res==='w'){p.w++;p.cs++;p.st=Math.max(p.st,p.cs);if(gw)p.gw++}else if(res==='l'){p.l++;p.cs=0}else p.d++;return p};
+async function finish(){
+  if(fin||!g.game_over()||over)return;fin=true;
+  if(!uid||mode==='local'||isAdmin()||auto)return;
+  const win=g.in_checkmate()?(g.turn()==='w'?'b':'w'):null,res=!win?'d':win===me?'w':'l';
+  try{
+    if(mode==='bot'){
+      const d={ez:3,nor:6,hard:10,hacker:16,god:24}[lvl];
+      prof=up(prof,res,res==='w'?d:res==='l'?-d/2:0,res==='w'&&lvl==='god');
+      await db.ref('users/'+uid).update(prof)}
+    else if(mode==='room'&&oppUid){
+      const o=Object.assign({},DEF,(await db.ref('users/'+oppUid).get()).val());
+      const E=1/(1+Math.pow(10,(o.elo-prof.elo)/400)),d=32*((res==='w'?1:res==='d'?.5:0)-E);
+      prof=up(prof,res,d,false);
+      await db.ref('users/'+uid).update(prof);
+      await db.ref('users/'+oppUid).update(up(o,res==='w'?'l':res==='l'?'w':'d',-d,false))}
+    refreshUser()}catch(e){}}
+const LB={elo:'Elo',w:'Thắng',gw:'Diệt God',st:'Chuỗi thắng'};
+function openLB(){$('lbm').classList.remove('hidden');lb('elo')}
+async function lb(k){
+  $('lbT').innerHTML=Object.entries(LB).map(([a,b])=>`<button class="btn" style="${a===k?'':'opacity:.5'}" onclick="lb('${a}')">${b}</button>`).join('');
+  if(!db){$('lbL').textContent='Chưa cấu hình Firebase.';return}
+  $('lbL').textContent='Đang tải…';
+  try{const s=await db.ref('users').orderByChild(k).limitToLast(20).get(),a=[];
+    s.forEach(c=>{a.push(c.val())});a.reverse();
+    $('lbL').innerHTML=a.map((p,i)=>`<div class="flex justify-between py-1 border-b border-white/10"><span>${i+1}. ${p.name}</span><b>${p[k]||0}</b></div>`).join('')||'Chưa có dữ liệu'}
+  catch(e){$('lbL').textContent='Lỗi: '+e.message}}
+
+/* ---------- Bot engine ---------- */
+function bd(c){const r=[];for(const row of c.fen().split(' ')[0].split('/')){const a=[];for(const ch of row){if(ch>='1'&&ch<='8'){for(let i=0;i<+ch;i++)a.push(null)}else a.push({type:ch.toLowerCase(),color:ch===ch.toUpperCase()?'w':'b'})}r.push(a)}return r}
+function ev(c,q){
+  if(!q){if(c.in_checkmate())return c.turn()==='w'?-99999:99999;
+  if(c.in_draw()||c.in_stalemate())return 0}
+  let s=0,Q=0;const K={w:null,b:null},NP={w:0,b:0},BP={w:0,b:0},b=bd(c);
+  for(let r=0;r<8;r++)for(let f=0;f<8;f++){
+    const p=b[r][f];if(!p)continue;
+    const t=p.type,w=p.color==='w',e=Math.max(Math.abs(r-3.5),Math.abs(f-3.5));
+    let v=V[t];
+    if(t==='k')K[p.color]=[r,f];
+    else{v+=(3.5-e)*(t==='p'?4:6);if(t!=='p')NP[p.color]+=V[t];if(t==='q')Q++;if(t==='b')BP[p.color]++}
+    if(t==='p')v+=(w?6-r:r-1)*6;
+    if((t==='n'||t==='b')&&(w?r===7:r===0))v-=12;
+    s+=w?v:-v}
+  for(const col of ['w','b']){
+    const k=K[col];if(!k)continue;
+    const e=Math.max(Math.abs(k[0]-3.5),Math.abs(k[1]-3.5)),kv=Q?(e-1.5)*10:(3.5-e)*8;
+    s+=col==='w'?kv:-kv;
+    if(BP[col]>1)s+=col==='w'?30:-30}
+  if(Math.abs(s)>300&&K.w&&K.b){
+    const win=s>0?'w':'b',lo=win==='w'?'b':'w';
+    if(NP[lo]<=330){
+      const lk=K[lo],wk=K[win];
+      const mop=Math.max(Math.abs(lk[0]-3.5),Math.abs(lk[1]-3.5))*14+(14-Math.abs(lk[0]-wk[0])-Math.abs(lk[1]-wk[1]))*6;
+      s+=win==='w'?mop:-mop}}
+  return s}
+const order=ms=>ms.sort((a,b)=>(b.captured?V[b.captured]:0)-(a.captured?V[a.captured]:0));
+let DL=0,TO=false,seenAt=[];
+function qs(c,a,b,mx,qd){
+  const sp=ev(c,true);if(qd===0)return sp;
+  if(mx){if(sp>=b)return sp;a=Math.max(a,sp)}else{if(sp<=a)return sp;b=Math.min(b,sp)}
+  let v=sp;
+  for(const m of order(c.moves({verbose:true}).filter(x=>x.captured))){
+    c.move(m);const t=qs(c,a,b,!mx,qd-1);c.undo();
+    if(mx){v=Math.max(v,t);a=Math.max(a,v)}else{v=Math.min(v,t);b=Math.min(b,v)}
+    if(b<=a)break}
+  return v}
+function mm(c,d,a,b,mx,prune){
+  if(Date.now()>DL){TO=true;return 0}
+  if(d===0)return qs(c,a,b,mx,2);
+  const ms=order(c.moves({verbose:true}));
+  if(!ms.length)return c.in_check()?(mx?-99999-d:99999+d):0;
+  let v=mx?-1e9:1e9;
+  for(const m of ms){
+    c.move(m);const s=mm(c,d-1,a,b,!mx,prune);c.undo();
+    if(mx){v=Math.max(v,s);a=Math.max(a,v)}else{v=Math.min(v,s);b=Math.min(b,v)}
+    if(prune&&b<=a)break}
+  return v}
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+function pick(c,level){
+  const ms=c.moves({verbose:true});if(!ms.length)return null;
+  if(level==='ez')return rnd(ms);
+  if(level==='nor'){
+    const caps=ms.filter(m=>m.captured);
+    if(!caps.length)return rnd(ms);
+    const top=Math.max(...caps.map(m=>V[m.captured]));
+    return rnd(caps.filter(m=>V[m.captured]===top))}
+  const w=c.turn()==='w';
+  if(level==='hard'){let best=null,bs=w?-1e9:1e9;
+    for(const m of order(ms)){c.move(m);if(c.in_checkmate()){c.undo();return m}
+      let s=ev(c);c.undo();s+=Math.random()*2;if(w?s>bs:s<bs){bs=s;best=m}}
+    return best}
+  const maxD=level==='hacker'?2:4;DL=Date.now()+(level==='hacker'?1500:3500);TO=false;
+  let root=order(ms).map(m=>({m,s:0})),best=root[0].m;
+  for(let d=1;d<=maxD;d++){
+    const cur=[];let bs=w?-1e9:1e9,bm=null;
+    for(const o of root){
+      c.move(o.m);
+      if(c.in_checkmate()){c.undo();return o.m}
+      const key=c.fen().split(' ').slice(0,4).join(' '),rep=seenAt.filter(k=>k===key).length;
+      let s=c.in_draw()?0:mm(c,d-1,-1e9,1e9,c.turn()==='w',true);c.undo();
+      if(TO)break;
+      if(rep&&(w?s>80:s<-80))s+=(w?-1:1)*rep*150;
+      cur.push({m:o.m,s});const a=s+Math.random()*2;
+      if(w?a>bs:a<bs){bs=a;bm=o.m}}
+    if(TO)break;
+    best=bm;root=cur.sort((x,y)=>w?y.s-x.s:x.s-y.s)}
+  return best}
+function think(l){
+  try{return pick(g,l)}catch(e){if(!window.ERR){window.ERR=1;toast('Lỗi engine: '+e.message,'red')}const ms=g.moves({verbose:true});return ms.length?rnd(ms):null}}
+
+/* ---------- Game flow ---------- */
+function render(){
+  const b=$('board');b.innerHTML='';
+  const legal=sel?g.moves({square:sel,verbose:true}).map(m=>m.to):[];
+  const pl=g.history().length;seenAt.length=pl;seenAt[pl]=g.fen().split(' ').slice(0,4).join(' ');
+  const last=g.history({verbose:true}).slice(-1)[0],ck=g.in_check()?g.turn():null;
+  for(let i=0;i<64;i++){
+    const r=flip?7-(i>>3):i>>3,f=flip?7-(i&7):i&7,sq='abcdefgh'[f]+(8-r),p=g.get(sq),d=document.createElement('div');
+    let c='sq '+((r+f)%2?'dk':'lt');
+    if(sq===sel)c+=' sel';else if(last&&(last.from===sq||last.to===sq))c+=' lm';
+    if(p&&p.type==='k'&&p.color===ck)c+=' ck';
+    if(p&&legal.includes(sq))c+=' cap';
+    d.className=c;let h='';
+    if(p)h+=`<span class="pc ${p.color}">${GL[p.type]}\uFE0E</span>`;
+    if(!p&&legal.includes(sq))h+='<i class="dot"></i>';
+    if(i>>3===7)h+=`<b class="co f">${'abcdefgh'[f]}</b>`;
+    if((i&7)===0)h+=`<b class="co r">${8-r}</b>`;
+    d.innerHTML=h;d.onclick=()=>tap(sq);b.appendChild(d)}
+  let t;
+  if(over)t=over;
+  else if(g.in_checkmate())t='Chiếu hết! '+(g.turn()==='w'?'Đen':'Trắng')+' thắng';
+  else if(g.in_draw()||g.in_stalemate())t='Hòa: '+drawWhy();
+  else t='Lượt '+(g.turn()==='w'?'Trắng':'Đen')+(g.in_check()?' – CHIẾU!':'')+(busy?' (đang suy nghĩ…)':'');
+  $('status').textContent=t}
+/* ---------- Notifications ---------- */
+function beep(f){try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),v=a.createGain();o.frequency.value=f;o.connect(v);v.connect(a.destination);v.gain.setValueAtTime(.15,a.currentTime);v.gain.exponentialRampToValueAtTime(.001,a.currentTime+.35);o.start();o.stop(a.currentTime+.35)}catch(e){}}
+function toast(m,k){
+  const d=document.createElement('div');d.className='t '+(k||'ok');d.textContent=m;$('toasts').appendChild(d);
+  try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}beep(k==='red'?330:660);setTimeout(()=>d.remove(),3200)}
+function banner(t,sub,win){
+  $('banT').textContent=t;$('banS').textContent=sub;$('ban').classList.remove('hidden');
+  try{navigator.vibrate&&navigator.vibrate(win?[100,60,100,60,200]:[300])}catch(e){}beep(win?880:220)}
+function drawWhy(){
+  if(g.in_stalemate())return 'Hết nước đi (stalemate): bên đến lượt không bị chiếu nhưng không còn nước hợp lệ.';
+  if(g.insufficient_material())return 'Không đủ quân để chiếu hết.';
+  if(g.in_threefold_repetition())return 'Lặp lại cùng một thế cờ 3 lần.';
+  return 'Luật 50 nước không ăn quân hay đi tốt.'}
+function notify(m){
+  if(m&&m.flags&&m.flags.includes('p'))toast('♛ Tốt phong thành Hậu!','gold');
+  if(g.in_checkmate()){
+    const w=g.turn()==='w'?'b':'w',mine=mode==='local'||w===me;
+    banner(mode==='local'?'♚ CHIẾU HẾT':mine?'🏆 CHIẾN THẮNG!':'💀 THUA CUỘC','Chiếu hết! '+(w==='w'?'Trắng':'Đen')+' thắng',mine)}
+  else if(g.in_draw()||g.in_stalemate())banner('🤝 HÒA',drawWhy(),true);
+  else if(g.in_check())toast('⚠️ Chiếu tướng!','red')}
+const myTurn=()=>mode==='local'||g.turn()===me;
+function tap(sq){
+  if(over||busy||g.game_over()||!myTurn()||(mode==='room'&&!oppIn))return;
+  const p=g.get(sq);
+  if(sel&&g.moves({square:sel,verbose:true}).some(m=>m.to===sq)){doMove(sel,sq);return}
+  sel=(p&&p.color===g.turn())?sq:null;render()}
+function doMove(from,to,remote){
+  const m=g.move({from,to,promotion:'q'});if(!m)return;
+  sel=null;
+  if(mode==='room'&&!remote&&rref)rref.update({fen:g.fen(),last:{p:m.flags.includes('p')}});
+  render();notify(m);finish();after()}
+function after(){
+  if(over||g.game_over())return;
+  if(mode==='bot'&&g.turn()!==me){
+    busy=true;render();
+    setTimeout(()=>{const m=think(lvl);busy=false;if(m)doMove(m.from,m.to);else render()},250)}
+  else if(auto&&isAdmin()&&(mode==='local'||g.turn()===me)&&!(mode==='room'&&!oppIn)){
+    busy=true;render();
+    setTimeout(()=>{const m=think('god');busy=false;if(m)doMove(m.from,m.to);else render()},350)}}
+function newGame(btn){
+  me=$('col').value;
+  g=new Chess();sel=null;over=null;busy=false;flip=me==='b';
+  fin=false;if(btn&&mode==='room'&&rref)rref.update({fen:START});
+  render();after()}
+function setMode(){
+  mode=$('mode').value;
+  $('lvlW').classList.toggle('hidden',mode!=='bot');
+  $('roomW').classList.toggle('hidden',mode!=='room');
+  if(mode!=='room'&&rref){rref.off();rref=null;room=null}
+  newGame()}
+
+/* ---------- Real online rooms (Firebase) ---------- */
+const START=new Chess().fen();
+function listen(code){
+  if(rref)rref.off();oppIn=false;room=code;rref=db.ref('rooms/'+code);
+  rref.on('value',s=>{
+    const d=s.val();if(!d)return;
+    const o=me==='w'?d.black:d.white;if(o&&!oppIn)toast(me==='w'?'👋 '+o.name+' đã vào phòng của bạn!':'✅ Đã kết nối với '+o.name,'ok');oppIn=!!o;oppUid=o?o.uid:null;
+    $('roomInfo').textContent='Phòng '+code+' · bạn cầm quân '+(me==='w'?'Trắng':'Đen')+' · đối thủ: '+(o?o.name:'đang chờ…');
+    if(d.fen===START)fin=false;
+    if(d.fen!==g.fen()){g.load(d.fen);sel=null;render();notify({flags:d.last&&d.last.p?'p':''})}else render()})}
+async function createRoom(){
+  if(!db){toast('Phòng online cần cấu hình Firebase','red');return}if(!uid){openAuth();return}
+  const c=Math.random().toString(36).slice(2,7).toUpperCase();
+  await db.ref('rooms/'+c).set({fen:START,white:{uid,name:user},ts:Date.now()});
+  $('col').value='w';me='w';flip=false;g=new Chess();over=null;fin=false;listen(c);render()}
+async function joinRoom(){
+  if(!db){toast('Phòng online cần cấu hình Firebase','red');return}if(!uid){openAuth();return}
+  const c=$('code').value.trim().toUpperCase(),d=(await db.ref('rooms/'+c).get()).val();
+  if(!d){$('roomInfo').textContent='Không tìm thấy phòng.';return}
+  if(d.white.uid===uid)me='w';
+  else{if(d.black&&d.black.uid!==uid){$('roomInfo').textContent='Phòng đã đầy.';return}
+    await db.ref('rooms/'+c+'/black').set({uid,name:user});me='b'}
+  $('col').value=me;flip=me==='b';over=null;fin=false;g=new Chess();listen(c)}
+
+/* ---------- Admin ---------- */
+function updAuto(){$('autoBtn').textContent='Tự động chơi: '+(auto?'BẬT':'TẮT')}
+function toggleAuto(){if(!isAdmin())return;auto=!auto;updAuto();toast('Tự động chơi '+(auto?'BẬT':'TẮT'),'gold');if(!busy)after()}
+function autoWin(){
+  if(!isAdmin())return;
+  const f=me==='w'?'7k/6Q1/6K1/8/8/8/8/8 b - - 0 1':'8/8/8/8/8/6k1/6q1/7K w - - 0 1';
+  g=new Chess(f);over=null;sel=null;busy=false;flip=me==='b';
+  if(mode==='room'&&rref)rref.update({fen:g.fen(),last:{p:false}});
+  render();notify()}
+function flipB(){if(!isAdmin())return;flip=!flip;render();toast('Đã lật bàn cờ','gold')}
+function undoM(){
+  if(!isAdmin())return;over=null;busy=false;g.undo();
+  if(mode==='bot'&&g.turn()!==me)g.undo();
+  render();toast('Đã đi lại','gold')}
+function loadFen(){
+  if(!isAdmin())return;
+  const f=$('fen').value.trim();if(!f){toast('Hãy dán FEN vào ô trước','red');return}
+  const n=new Chess();if(!n.load(f)){toast('FEN không hợp lệ','red');return}
+  g=n;over=null;sel=null;busy=false;
+  if(mode==='room'&&rref)rref.update({fen:g.fen()});
+  render();toast('Đã nạp FEN','gold');after()}
+function swapTurn(){
+  if(!isAdmin())return;
+  const p=g.fen().split(' ');p[1]=p[1]==='w'?'b':'w';p[3]='-';
+  const n=new Chess();
+  if(!n.load(p.join(' '))){toast('Không bỏ lượt được: vua sẽ bị chiếu','red');return}
+  g=n;busy=false;
+  if(mode==='room'&&rref)rref.update({fen:g.fen()});
+  render();toast('Đã bỏ lượt','gold');after()}
+
+/* ---------- Init ---------- */
+refreshUser();render();
+</script>
+</body>
+</html>
